@@ -20,44 +20,37 @@ This is a first-pass implementation to demonstrate the CLI interface without ful
 
 ### Prerequisites
 
-- Gmail account with Scholar Alert Digests
+- Python 3.13 or higher
 - uv package manager (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- Gmail account with Scholar Alert Digests
 
 ### Setup
 
 1. Clone this repository:
-```bash
-git clone https://github.com/yourusername/paper-loupe.git
-cd paper-loupe
-```
+   ```bash
+   git clone https://github.com/yourusername/paper-loupe.git
+   cd paper-loupe
+   ```
 
 2. Install the tool using uv:
-```bash
-uv sync
-```
+   ```bash
+   uv sync
+   ```
 
-## Configuration
+3. Create a configuration directory and copy the example configuration:
+   ```bash
+   mkdir -p ~/.config/paper-loupe
+   cp config_example.yaml ~/.config/paper-loupe/config.yaml
+   ```
 
-1. Create a configuration directory:
-```bash
-mkdir -p ~/.config/paper-loupe
-```
-
-2. Copy the example configuration file:
-```bash
-cp config_example.yaml ~/.config/paper-loupe/config.yaml
-```
-
-3. Edit the configuration file to include your research questions:
-```bash
-vim ~/.config/paper-loupe/config.yaml
-```
+4. Edit the configuration file to include your research questions:
+   ```bash
+   vim ~/.config/paper-loupe/config.yaml
+   ```
 
 ## Usage
 
-Paper Loupe provides the following commands:
-
-### Setup
+### Initial Setup
 
 Initialize Paper Loupe and set up Gmail API authentication:
 
@@ -65,25 +58,30 @@ Initialize Paper Loupe and set up Gmail API authentication:
 uv run paper-loupe setup
 ```
 
-### Process
+### Process Papers
 
 Process emails and rank papers based on relevance:
 
 ```bash
-# Process emails from the last 30 days
+# Process emails from the last 30 days (default)
 uv run paper-loupe process
 
-# Process emails since a specific date
-uv run paper-loupe process --since 2023-01-01
+# Additional options:
+# --since YYYY-MM-DD   Process emails since a specific date
+# --model MODEL_NAME   Use a specific LLM model (run 'paper-loupe models' to see options)
+# --output PATH        Save output to a file
+```
 
-# Use a specific LLM model
-uv run paper-loupe process --model gpt-4o
+Examples:
+```bash
+# Process emails since January 1, 2023 using GPT-4o Mini
+uv run paper-loupe process --since 2023-01-01 --model gpt-4o-mini
 
-# Save output to a file
+# Process emails and save results to a CSV file
 uv run paper-loupe process --output ~/paper_rankings.csv
 ```
 
-### Show
+### View Papers
 
 Show details of papers in the database:
 
@@ -95,12 +93,16 @@ uv run paper-loupe show
 uv run paper-loupe show PAPER_ID
 ```
 
-### Models
+### View Available Models
 
-List available LLM models:
+List available LLM models and their details:
 
 ```bash
+# List all available models
 uv run paper-loupe models
+
+# Show details for a specific model
+uv run paper-loupe models MODEL_NAME
 ```
 
 ## Development
@@ -110,39 +112,33 @@ uv run paper-loupe models
 Run tests with pytest:
 
 ```bash
-# First install all dependencies
+# Install dependencies
 uv sync
 
-# Then run pytest
+# Run tests
 uv run -m pytest -xvs
 ```
 
 ### Automated Code Quality with Pre-commit
 
-This project is set up with pre-commit to automatically run code quality tools before each commit:
+Set up pre-commit to automatically run code quality tools before each commit:
 
-1. Set up the git hooks:
 ```bash
+# Install pre-commit hooks
 uv run pre-commit install
-```
 
-3. Now, each time you commit code, the following checks will run automatically:
-   - Black (code formatting)
-   - isort (import sorting)
-   - Ruff (linting)
-   - Type checking with mypy
-   - Other checks like trailing whitespace and YAML validation
-
-If any check fails, the commit will be aborted, giving you a chance to fix the issues first.
-
-You can also run the checks manually:
-```bash
+# Run pre-commit checks manually
 uv run pre-commit run --all-files
 ```
 
-## Future Improvements
+Pre-commit will automatically run these checks:
+- Black (code formatting)
+- isort (import sorting)
+- Ruff (linting)
+- Type checking with mypy
+- Other checks like trailing whitespace and YAML validation
 
-This is a first-pass implementation that demonstrates the CLI interface. Future improvements will include:
+## Future Improvements
 
 1. Full implementation of Gmail API authentication and email processing
 2. Complete arXiv integration with proper throttling

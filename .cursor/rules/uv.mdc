@@ -1,0 +1,14 @@
+---
+description: ALWAYS USE FOR BASH COMMANDS - Running tools and executables, managing dependencies, and testing the project's code.
+globs: *.py
+---
+
+# Only Use UV for project management
+
+- When running a tool which uses dependencies in this project, always use `uv run`.
+- When changing dependencies, always make the changes in the `pyproject.toml`
+
+Here's an example command to run paper-loupe:
+```bash
+uv run paper-loupe ...
+```
