@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "paper-loupe"
+dynamic = ["version"]
+description = "CLI-based application to manage and prioritize your research paper backlog"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Jackson Waschura"},
+]
+dependencies = [
+    "click>=8.1.0",
+    "pyyaml>=6.0",
+    "pandas>=2.0.0",
+    "pyarrow>=14.0.0",
+    "openai>=1.0.0",
+    "google-auth>=2.0.0",
+    "google-auth-oauthlib>=1.0.0",
+    "google-api-python-client>=2.0.0",
+    "arxiv>=1.4.0",
+    "rich>=13.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "black>=24.10.0",
+    "isort>=5.0.0",
+    "ruff>=0.0.278",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+    "types-PyYAML>=6.0.0",
+    "types-requests>=2.30.0",
+]
+
+[project.scripts]
+paper-loupe = "paper_loupe.cli:cli"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
+target-version = ["py313"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = "paper_loupe.cli"
+disallow_untyped_decorators = false
+disable_error_code = ["misc"]
+
+[tool.hatch.version]
+source = "regex"
+path = "paper_loupe/VERSION"
+pattern = "^(?P<version>.+)$"

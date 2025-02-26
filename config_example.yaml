@@ -1,0 +1,22 @@
+# Paper Loupe Configuration Example
+# Copy this file to ~/.config/paper-loupe/config.yaml and modify as needed
+
+# Questions to evaluate paper relevance against
+questions:
+  - "What are the latest advancements in multimodal large language models?"
+  - "How are fundamental changes to the transformer architecture allowing for more efficient training or inference?"
+  - "What are recent developments in efficient training for large language models?"
+  - "How are transformers being used for multiview diffusion and generative 3D tasks?"
+
+# Optional settings
+settings:
+  # Default model to use for relevance scoring (optional)
+  default_model: "gpt-4o-mini"
+
+  # Default output path for ranked papers (optional)
+  # If not specified, results will only be printed to the console
+  # default_output_path: "~/paper_rankings.csv"
+
+  # Default number of days to look back for emails (optional)
+  # If not specified, defaults to 30 days
+  # default_lookback_days: 30
