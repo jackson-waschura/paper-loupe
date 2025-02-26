@@ -12,6 +12,8 @@ Paper Loupe helps you stay on top of your research paper reading list by:
 4. Scoring papers based on relevance to your research questions
 5. Presenting a ranked list of papers to help you prioritize your reading
 
+![Demo Screenshot](./assets/demo_screenshot.png)
+
 ## Installation
 
 This is a first-pass implementation to demonstrate the CLI interface without full functionality.
