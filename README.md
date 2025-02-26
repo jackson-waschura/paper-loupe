@@ -93,6 +93,14 @@ uv run paper-loupe show
 uv run paper-loupe show PAPER_ID
 ```
 
+### Models
+
+List available LLM models:
+
+```bash
+uv run paper-loupe models
+```
+
 ## Development
 
 ### Testing
