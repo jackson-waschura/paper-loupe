@@ -18,7 +18,6 @@ This is a first-pass implementation to demonstrate the CLI interface without ful
 
 ### Prerequisites
 
-- Python 3.13 or later
 - Gmail account with Scholar Alert Digests
 - uv package manager (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
 
