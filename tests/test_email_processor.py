@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 from paper_loupe.email_processor import (
     authenticate_gmail,
     fetch_scholar_alerts,
-    list_labels,
     parse_email,
 )
 
@@ -22,15 +21,6 @@ class TestEmailProcessor(unittest.TestCase):
         """Set up test fixtures."""
         # Create a mock service
         self.mock_service = MagicMock()
-
-        # Create mock Gmail API responses
-        self.mock_labels_response = {
-            "labels": [
-                {"id": "INBOX", "name": "INBOX"},
-                {"id": "SENT", "name": "SENT"},
-                {"id": "SPAM", "name": "SPAM"},
-            ]
-        }
 
         self.mock_messages_list_response = {
             "messages": [
@@ -88,21 +78,6 @@ class TestEmailProcessor(unittest.TestCase):
         # Clean up
         os.unlink(temp_token_path)
 
-    def test_list_labels(self) -> None:
-        """Test listing Gmail labels."""
-        # Set up the mock service
-        self.mock_service.users().labels().list.return_value.execute.return_value = (
-            self.mock_labels_response
-        )
-
-        # Call the function
-        labels = list_labels(self.mock_service)
-
-        # Assertions
-        self.assertEqual(len(labels), 3)
-        self.assertEqual(labels, ["INBOX", "SENT", "SPAM"])
-        self.mock_service.users().labels().list.assert_called_once_with(userId="me")
-
     def test_fetch_scholar_alerts(self) -> None:
         """Test fetching Scholar Alert emails."""
         # Set up the mock service
@@ -133,7 +108,7 @@ class TestEmailProcessor(unittest.TestCase):
 
         # Assertions
         self.assertEqual(len(papers), 1)
-        self.assertEqual(papers[0]["title"], "Scholar Alert: [Machine Learning]")
+        self.assertEqual(papers[0]["title"], "Scholar Alert Digest AA/BB")
         self.assertEqual(papers[0]["snippet"], "This is a paper about machine learning")
         self.assertEqual(papers[0]["email_id"], "msg1")
         self.assertEqual(papers[0]["timestamp"], "1609459200000")

@@ -152,50 +152,13 @@ def parse_email(email: Any) -> list[Dict[str, Any]]:
     return papers
 
 
-def list_labels(service: Any) -> List[str]:
-    """List all available labels in the user's Gmail account.
-
-    This is primarily for demonstration/testing of the API connection.
-
-    Args:
-        service: Authenticated Gmail API service
-
-    Returns:
-        List of label names
-    """
-    try:
-        results = service.users().labels().list(userId="me").execute()
-        labels = results.get("labels", [])
-
-        if not labels:
-            print("No labels found.")
-            return []
-
-        label_names = [label["name"] for label in labels]
-        return label_names
-
-    except HttpError as error:
-        print(f"An error occurred: {error}")
-        return []
-
-
 # Example usage
 if __name__ == "__main__":
-    # List Gmail labels to verify the connection
-    def test_list_labels(service: Any) -> None:
-        labels = list_labels(service)
-        print("Labels:")
-        for label in labels:
-            print(f"- {label}")
-
     # Authenticate with Gmail API
     service = authenticate_gmail()
 
     if service:
         print("Authentication successful!")
-
-        # Test listing labels
-        test_list_labels(service)
 
         # Fetch Scholar Alert emails from the last 30 days
         thirty_days_ago = datetime.now() - timedelta(days=30)
