@@ -105,7 +105,8 @@ uv run paper-loupe models
 uv run paper-loupe models MODEL_NAME
 ```
 
-## Development
+<details>
+<summary><b>Development Information</b></summary>
 
 ### Testing
 
@@ -138,10 +139,44 @@ Pre-commit will automatically run these checks:
 - Type checking with mypy
 - Other checks like trailing whitespace and YAML validation
 
-## Future Improvements
+</details>
 
-1. Full implementation of Gmail API authentication and email processing
-2. Complete arXiv integration with proper throttling
-3. LLM-based relevance scoring
-4. Complete data storage with parquet files
-5. Additional testing and error handling
+## To-Do List
+
+The following items need to be completed for full functionality:
+
+### Gmail Integration
+- [ ] Implement retry logic with exponential backoff for API requests
+- [ ] Enhance error handling for API rate limits and authentication issues
+- [ ] Add partial success handling to save progress on failures
+
+### Email Processing
+- [ ] Refine filtering for Scholar Alert Digest emails
+- [ ] Complete parser to extract paper details (title, authors, publication date)
+- [ ] Implement duplicate detection based on paper titles
+
+### arXiv Integration
+- [x] Implement arXiv API client using the arxiv Python package
+- [x] Add throttling to respect API rate limits (max 1 request/second with jitter)
+- [x] Implement fallback search strategies for when exact title matches fail
+- [ ] Complete duplicate detection based on arXiv IDs
+
+### Data Storage
+- [ ] Finish dataframe structure implementation for paper data
+- [ ] Activate parquet file storage for persistent data
+
+### LLM Integration
+- [ ] Set up secure API key management for OpenAI/Anthropic
+- [ ] Complete paper relevance scoring using LLM APIs
+- [ ] Enhance prompt templates for paper evaluation
+- [x] Add model selection functionality
+
+### CLI and Output
+- [x] Progress logging with clear status updates
+- [ ] Implement verbosity controls
+- [ ] Complete paper ranking and sorting functionality
+- [ ] Finalize formatted output options (terminal, CSV, etc.)
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
