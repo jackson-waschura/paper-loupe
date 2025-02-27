@@ -12,3 +12,13 @@ Here's an example command to run paper-loupe:
 ```bash
 uv run paper-loupe ...
 ```
+
+Here's an example command to run all tests:
+```bash
+uv run pytest
+```
+
+Here's an example command to run a specific module:
+```bash
+uv run -m paper_loupe.email_processor
+```
