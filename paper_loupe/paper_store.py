@@ -21,9 +21,21 @@ def create_dataframe(papers: List[Dict[str, Any]]) -> pd.DataFrame:
     Returns:
         pandas DataFrame containing paper information
     """
-    # This would create a proper dataframe with paper information
-    # For now, it's just a stub
-    return pd.DataFrame(papers)
+    if not papers:
+        return pd.DataFrame()
+
+    # Create the DataFrame from the list of dictionaries
+    df = pd.DataFrame(papers)
+
+    # Convert date strings to datetime objects if present
+    if "email_date" in df.columns:
+        df["email_date"] = pd.to_datetime(df["email_date"], errors="coerce")
+
+    # Ensure relevance is numeric
+    if "relevance" in df.columns:
+        df["relevance"] = pd.to_numeric(df["relevance"], errors="coerce")
+
+    return df
 
 
 def save_dataframe(df: pd.DataFrame, output_path: Union[str, Path]) -> bool:
@@ -36,14 +48,19 @@ def save_dataframe(df: pd.DataFrame, output_path: Union[str, Path]) -> bool:
     Returns:
         True if successful, False otherwise
     """
-    # This would save the dataframe to a parquet file
-    # For now, it's just a stub
     try:
-        # Ensure directory exists
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        # df.to_parquet(output_path)
+        # Convert path to Path object if it's a string
+        if isinstance(output_path, str):
+            output_path = Path(output_path)
+
+        # Ensure parent directories exist
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save DataFrame to parquet file
+        df.to_parquet(output_path)
         return True
-    except Exception:
+    except Exception as e:
+        print(f"Error saving dataframe: {e}")
         return False
 
 
@@ -54,14 +71,24 @@ def load_dataframe(input_path: Union[str, Path]) -> Optional[pd.DataFrame]:
         input_path: Path to the parquet file
 
     Returns:
-        pandas DataFrame or None if the file doesn't exist
+        pandas DataFrame or None if loading failed
     """
-    # This would load the dataframe from a parquet file
-    # For now, it's just a stub
     try:
-        # return pd.read_parquet(input_path)
-        return pd.DataFrame()
-    except FileNotFoundError:
+        # Convert path to Path object if it's a string
+        if isinstance(input_path, str):
+            input_path = Path(input_path)
+
+        # Check if file exists
+        if not input_path.exists():
+            print(f"File not found: {input_path}")
+            return None
+
+        # Load DataFrame from parquet file
+        df = pd.read_parquet(input_path)
+
+        return df
+    except Exception as e:
+        print(f"Error loading dataframe: {e}")
         return None
 
 
