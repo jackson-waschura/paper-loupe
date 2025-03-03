@@ -145,37 +145,23 @@ Pre-commit will automatically run these checks:
 
 The following items need to be completed for full functionality:
 
-### Gmail Integration
-- [ ] Implement retry logic with exponential backoff for API requests
-- [ ] Enhance error handling for API rate limits and authentication issues
-- [ ] Add partial success handling to save progress on failures
-
-### Email Processing
-- [ ] Refine filtering for Scholar Alert Digest emails
-- [ ] Complete parser to extract paper details (title, authors, publication date)
-- [ ] Implement duplicate detection based on paper titles
-
-### arXiv Integration
-- [x] Implement arXiv API client using the arxiv Python package
-- [x] Add throttling to respect API rate limits (max 1 request/second with jitter)
-- [x] Implement fallback search strategies for when exact title matches fail
-- [ ] Complete duplicate detection based on arXiv IDs
-
-### Data Storage
-- [ ] Finish dataframe structure implementation for paper data
-- [ ] Activate parquet file storage for persistent data
-
 ### LLM Integration
 - [ ] Set up secure API key management for OpenAI/Anthropic
 - [ ] Complete paper relevance scoring using LLM APIs
-- [ ] Enhance prompt templates for paper evaluation
-- [x] Add model selection functionality
+- [ ] Decide on prompt templates for paper evaluation
 
-### CLI and Output
-- [x] Progress logging with clear status updates
-- [ ] Implement verbosity controls
-- [ ] Complete paper ranking and sorting functionality
-- [ ] Finalize formatted output options (terminal, CSV, etc.)
+### Pulling Threads Together
+- [ ] Implement the high-level workflow for paper processing
+- [ ] Implement the config system
+
+### Clean Up
+- [ ] Rewrite README to reflect final user experience
+- [ ] Improve file and method docstrings
+
+### Longer Term
+- [ ] Create a ~25 sample paper dataset to test question relevance prompts.
+- [ ] Evaluate the performance of different LLMs and prompts to find best value.
+- [ ] Add an option to construct and send an email with top papers to read.
 
 ## License
 
