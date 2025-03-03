@@ -1,5 +1,6 @@
 """Tests for email_processor.py without requiring OAuth flow."""
 
+import base64
 import json
 import os
 import tempfile
@@ -42,7 +43,24 @@ class TestEmailProcessor(unittest.TestCase):
                         "name": "From",
                         "value": "Google Scholar <scholaralerts-noreply@google.com>",
                     },
-                ]
+                    {"name": "Date", "value": "Fri, 01 Jan 2021 00:00:00 +0000"},
+                ],
+                "body": {
+                    "data": base64.urlsafe_b64encode(
+                        """
+                        <div>
+                            <div class="scholar-inbox.com">
+                                <article>
+                                    <h2><a href="https://example.com/paper">Scholar Alert Digest AA/BB</a></h2>
+                                    <p>Author One, Author Two</p>
+                                    <span>Relevance: 80</span>
+                                    <div style="display:inline;float:right;">Journal of Example</div>
+                                </article>
+                            </div>
+                        </div>
+                        """.encode()
+                    ).decode()
+                },
             },
         }
 
@@ -109,9 +127,12 @@ class TestEmailProcessor(unittest.TestCase):
         # Assertions
         self.assertEqual(len(papers), 1)
         self.assertEqual(papers[0]["title"], "Scholar Alert Digest AA/BB")
-        self.assertEqual(papers[0]["snippet"], "This is a paper about machine learning")
         self.assertEqual(papers[0]["email_id"], "msg1")
-        self.assertEqual(papers[0]["timestamp"], "1609459200000")
+        self.assertEqual(papers[0]["email_date"], "Fri, 01 Jan 2021 00:00:00 +0000")
+        self.assertEqual(papers[0]["authors"], "Author One, Author Two")
+        self.assertEqual(papers[0]["relevance"], 80)
+        self.assertEqual(papers[0]["venue"], "Journal of Example")
+        self.assertEqual(papers[0]["url"], "https://example.com/paper")
 
 
 if __name__ == "__main__":
