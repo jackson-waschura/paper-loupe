@@ -17,6 +17,8 @@ import os.path
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from bs4 import BeautifulSoup, Tag
+
 # These imports lack type stubs, so we need to ignore mypy warnings
 from google.auth.transport.requests import Request  # type: ignore
 from google.oauth2.credentials import Credentials  # type: ignore
@@ -156,14 +158,16 @@ def parse_email(email: Any) -> list[Dict[str, Any]]:
     # Parse HTML to extract paper information
     if body_html and "scholar-inbox.com" in body_html:
         # Use BeautifulSoup to parse the HTML content
-        from bs4 import BeautifulSoup
-
         soup = BeautifulSoup(body_html, "html.parser")
 
         # Find all paper articles
         articles = soup.find_all("article")
 
         for article in articles:
+            # Type guard to ensure article is a Tag
+            if not isinstance(article, Tag):
+                continue
+
             paper = {
                 "email_id": email.get("id", ""),
                 "email_date": date_str,
@@ -173,19 +177,24 @@ def parse_email(email: Any) -> list[Dict[str, Any]]:
 
             # Extract paper title
             title_element = article.find("h2")
-            if title_element and title_element.find("a"):
-                paper["title"] = title_element.find("a").text.strip()
+            # Type guard to ensure title_element is a Tag
+            if title_element is not None and isinstance(title_element, Tag):
+                title_link = title_element.find("a")
+                if title_link is not None and isinstance(title_link, Tag):
+                    paper["title"] = title_link.text.strip()
 
             # Extract authors
             authors_element = article.find("p")
-            if authors_element:
+            if authors_element is not None and isinstance(authors_element, Tag):
                 paper["authors"] = authors_element.text.strip()
 
             # Extract relevance score
-            relevance_span = article.find(
-                "span", string=lambda text: "Relevance:" in text if text else False
-            )
-            if relevance_span:
+            # Use a separate function to wrap the lambda to help with type checking
+            def relevance_filter(text: Any) -> bool:
+                return "Relevance:" in text if text else False
+
+            relevance_span = article.find("span", string=relevance_filter)
+            if relevance_span is not None and isinstance(relevance_span, Tag):
                 relevance_text = relevance_span.text.strip()
                 try:
                     paper["relevance"] = int(
@@ -195,20 +204,23 @@ def parse_email(email: Any) -> list[Dict[str, Any]]:
                     paper["relevance"] = 0
 
             # Extract publication venue/date
-            venue_div = article.find(
-                "div",
-                {
-                    "style": lambda style: (
-                        "display:inline;float:right;" in style if style else False
-                    )
-                },
-            )
-            if venue_div:
+            # Use a separate function to wrap the lambda to help with type checking
+            def style_filter(style: Any) -> bool:
+                return "display:inline;float:right;" in style if style else False
+
+            venue_div = article.find("div", attrs={"style": style_filter})
+            if venue_div is not None and isinstance(venue_div, Tag):
                 paper["venue"] = venue_div.text.strip()
 
             # Add paper URL
-            url_element = title_element.find("a") if title_element else None
-            if url_element and "href" in url_element.attrs:
+            url_element = None
+            if title_element is not None and isinstance(title_element, Tag):
+                url_element = title_element.find("a")
+            if (
+                url_element is not None
+                and isinstance(url_element, Tag)
+                and "href" in url_element.attrs
+            ):
                 paper["url"] = url_element["href"]
 
             papers.append(paper)

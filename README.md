@@ -148,11 +148,11 @@ The following items need to be completed for full functionality:
 ### LLM Integration
 - [x] Set up secure API key management for OpenAI/Anthropic
 - [x] Complete paper relevance scoring using LLM APIs
-- [ ] Decide on prompt templates for paper evaluation
+- [x] Decide on prompt templates for paper evaluation
 
 ### Pulling Threads Together
-- [ ] Implement the high-level workflow for paper processing
-- [ ] Implement the config system
+- [x] Implement the high-level workflow for paper processing
+- [x] Implement the config system
 
 ### Clean Up
 - [ ] Rewrite README to reflect final user experience

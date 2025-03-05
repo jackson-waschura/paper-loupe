@@ -53,8 +53,9 @@ class TestPaperStore(unittest.TestCase):
 
     def test_create_dataframe_empty(self) -> None:
         """Test creating a dataframe with empty list."""
-        df = create_dataframe([])
-        self.assertTrue(df.empty)
+        with self.assertRaises(ValueError) as cm:
+            create_dataframe([])
+        self.assertEqual(str(cm.exception), "No papers provided to create_dataframe")
 
     def test_save_and_load_dataframe(self) -> None:
         """Test saving and loading a dataframe."""

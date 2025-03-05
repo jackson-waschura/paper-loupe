@@ -20,12 +20,23 @@ def create_dataframe(papers: List[Dict[str, Any]]) -> pd.DataFrame:
 
     Returns:
         pandas DataFrame containing paper information
+
+    Raises:
+        ValueError: If papers list is empty or if required fields are missing
     """
     if not papers:
-        return pd.DataFrame()
+        raise ValueError("No papers provided to create_dataframe")
 
     # Create the DataFrame from the list of dictionaries
     df = pd.DataFrame(papers)
+
+    # Check for required fields
+    required_fields = ["title", "authors"]
+    missing_fields = [field for field in required_fields if field not in df.columns]
+    if missing_fields:
+        raise ValueError(
+            f"Papers are missing required fields: {', '.join(missing_fields)}"
+        )
 
     # Convert date strings to datetime objects if present
     if "email_date" in df.columns:
@@ -116,6 +127,10 @@ def rank_papers(df: pd.DataFrame, relevance_scores: Dict[str, float]) -> pd.Data
     Returns:
         pandas DataFrame sorted by relevance score
     """
-    # This would sort the dataframe based on relevance scores
-    # For now, it's just a stub
+    # Add relevance scores to the dataframe
+    df["score"] = df["arxiv_id"].map(relevance_scores)
+
+    # Sort the dataframe by relevance score in descending order
+    df = df.sort_values(by="score", ascending=False)
+
     return df

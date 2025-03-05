@@ -29,7 +29,7 @@ except ImportError:
     logger.warning("OpenAI package not installed. OpenAI models will not be available.")
 
 try:
-    import anthropic
+    import anthropic  # type: ignore
 
     ANTHROPIC_AVAILABLE = True
 except ImportError:
@@ -113,9 +113,9 @@ class OpenAIProvider(LLMProvider):
             metadata = {
                 "model": model_id,
                 "provider": "openai",
-                "prompt_tokens": response.usage.prompt_tokens,
-                "completion_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens,
+                "prompt_tokens": response.usage.prompt_tokens,  # type: ignore
+                "completion_tokens": response.usage.completion_tokens,  # type: ignore
+                "total_tokens": response.usage.total_tokens,  # type: ignore
             }
 
             return content, metadata
@@ -214,123 +214,191 @@ def analyze_relevance(
     config: Dict[str, Any],
     model: str = "gpt-4o-mini",
 ) -> Dict[str, Any]:
-    """Analyze the relevance of a paper to a question using an LLM.
+    """Analyze the relevance of a paper to a research question.
 
     Args:
-        paper_data: Dictionary containing paper information
-        question: The question to assess relevance against
-        config: The loaded configuration
-        model: The LLM model to use
+        paper_data: Dictionary containing paper metadata
+        question: Research question to evaluate relevance against
+        config: Configuration dictionary with API keys
+        model: The model ID to use for analysis
 
     Returns:
-        Dictionary with relevance score and explanation
+        Dictionary with analysis results including relevance score and explanation
+
+    Raises:
+        ValueError: If paper_data is missing required fields like 'id' or 'title'
     """
-    # Check if model is supported
-    if model not in SUPPORTED_MODELS:
-        logger.error(f"Model {model} not supported")
+    console = Console()
+
+    # Validate paper data has required fields
+    if "arxiv_id" not in paper_data:
+        raise ValueError("Paper data is missing required 'arxiv_id' field")
+
+    if "title" not in paper_data:
+        raise ValueError("Paper data is missing required 'title' field")
+
+    model_info = SUPPORTED_MODELS.get(model)
+    if not model_info:
+        console.print(f"[bold red]Error:[/bold red] Model '{model}' not supported.")
         return {
-            "score": None,
-            "explanation": f"Error: Model {model} not supported",
+            "relevance_score": 0.0,
+            "explanation": f"Error: Model '{model}' not supported.",
             "error": True,
+            "arxiv_id": paper_data["arxiv_id"],
+            "title": paper_data["title"],
         }
 
-    model_info = SUPPORTED_MODELS[model]
     provider = get_provider(config, model_info)
-
     if not provider:
-        logger.error(f"Provider {model_info['provider']} not available")
+        console.print(
+            f"[bold red]Error:[/bold red] Failed to initialize {model_info['provider']} provider."
+        )
         return {
-            "score": None,
-            "explanation": f"Error: {model_info['provider'].capitalize()} provider not available",
+            "relevance_score": 0.0,
+            "explanation": f"Error: Failed to initialize {model_info['provider']} provider.",
             "error": True,
+            "arxiv_id": paper_data["arxiv_id"],
+            "title": paper_data["title"],
         }
 
-    # Create the prompt
     prompt = create_prompt(paper_data, question)
-
     try:
-        # Call the LLM
-        response, metadata = provider.analyze(
-            prompt, model_info["api_model_id"], model_info["max_tokens_default"]
+        # Call the LLM to analyze relevance
+        response_text, metadata = provider.analyze(
+            prompt, model_info["api_model_id"], max_tokens=1000
         )
 
-        # Parse the response to extract the score
-        result = parse_relevance_response(response)
+        # Parse the response
+        result = parse_relevance_response(response_text)
+
+        # Add metadata about the analysis
+        result["question"] = question
+        result["arxiv_id"] = paper_data["arxiv_id"]
+        result["title"] = paper_data["title"]
         result["metadata"] = metadata
 
         return result
-
     except LLMError as e:
-        logger.error(f"LLM error: {str(e)}")
+        console.print(f"[bold red]LLM Error:[/bold red] {str(e)}")
         return {
-            "score": None,
-            "explanation": f"Error: {str(e)}",
+            "relevance_score": 0.0,
+            "explanation": f"Error from LLM: {str(e)}",
             "error": True,
+            "question": question,
+            "arxiv_id": paper_data["arxiv_id"],
+            "title": paper_data["title"],
+            "metadata": {"model_used": model},
         }
 
 
 def create_prompt(paper_data: Dict[str, Any], question: str) -> str:
-    """Create a prompt for the LLM to assess paper relevance.
+    """Create a prompt for the LLM to analyze paper relevance to a question.
 
     Args:
-        paper_data: Dictionary containing paper information
-        question: The question to assess relevance against
+        paper_data: Dictionary containing paper metadata
+        question: Research question to evaluate relevance against
 
     Returns:
-        String containing the formatted prompt
+        Formatted prompt string for the LLM
     """
-    return f"""
-Please evaluate how relevant the following research paper is to this research question:
+    # Extract paper information
+    title = paper_data.get("title", "Untitled Paper")
+    authors = paper_data.get("authors", "Unknown Authors")
+    abstract = paper_data.get("abstract", "No abstract available.")
 
-RESEARCH QUESTION:
-"{question}"
+    # Clean up abstract (ensure it's not too long)
+    if len(abstract) > 2000:
+        abstract = abstract[:1997] + "..."
+
+    # Format categories if available
+    categories = paper_data.get("categories", [])
+    categories_str = ", ".join(categories) if categories else "Not specified"
+
+    # Create the prompt with clear instructions and structured format, placing task and response format first
+    prompt = f"""You are a research assistant helping to evaluate papers for relevance to specific research questions.
+
+TASK:
+Describe whether the topic of the paper or any of its results have any bearing on the research question below. Then produce a final score between 0 and 10, where:
+- 0: Completely irrelevant, no connection to the research question
+- 5: Somewhat relevant, has some connection but not directly addressing the question
+- 10: Highly relevant, directly addresses the core of the research question
+
+REQUIRED RESPONSE FORMAT:
+Provide your response in the following XML format:
+<explanation>
+Your detailed explanation of whether and how the paper relates to the research question. Analyze both the topic and any results mentioned in the abstract.
+</explanation>
+<score>X</score>
+Where X is an integer between 0 and 10.
 
 PAPER DETAILS:
-Title: {paper_data.get("title", "Unknown Title")}
-Authors: {paper_data.get("authors", "Unknown Authors")}
-Abstract: {paper_data.get("abstract", "No abstract available")}
+Title: {title}
+Authors: {authors}
+Categories: {categories_str}
+Abstract: {abstract}
 
-On a scale from 0 to 100, how relevant is this paper to the research question?
-First, provide your reasoning, analyzing why the paper is or isn't relevant to the question.
-Then, provide your final numerical score in the format "RELEVANCE SCORE: X" (a number between 0 and 100).
+RESEARCH QUESTION:
+{question}
 
-0 means completely irrelevant
-50 means somewhat relevant
-100 means highly relevant
+IMPORTANT: Return ONLY the XML formatted output, with no additional text before or after.
 """
+    return prompt
 
 
 def parse_relevance_response(response: str) -> Dict[str, Any]:
     """Parse the LLM response to extract relevance score and explanation.
 
     Args:
-        response: The raw response from the LLM
+        response: LLM response text in XML format
 
     Returns:
-        Dictionary with score and explanation
+        Dictionary with only the explanation and relevance_score
     """
-    # Default values
-    score = None
-    explanation = response.strip()
+    try:
+        # Extract XML from response (in case there's any text before or after)
+        xml_content = response.strip()
 
-    # Look for "RELEVANCE SCORE: X" pattern
-    import re
+        # If the response is wrapped with a code block, extract it
+        if "```xml" in xml_content and "```" in xml_content:
+            start_idx = xml_content.find("```xml") + 7
+            end_idx = xml_content.rfind("```")
+            xml_content = xml_content[start_idx:end_idx].strip()
+        elif "```" in xml_content:
+            start_idx = xml_content.find("```") + 3
+            end_idx = xml_content.rfind("```")
+            xml_content = xml_content[start_idx:end_idx].strip()
 
-    score_match = re.search(r"RELEVANCE SCORE:\s*(\d+)", response)
+        # Extract explanation and score using regex for robustness
+        import re
 
-    if score_match:
+        explanation_match = re.search(
+            r"<explanation>(.*?)</explanation>", xml_content, re.DOTALL
+        )
+        score_match = re.search(r"<score>(.*?)</score>", xml_content, re.DOTALL)
+
+        if not explanation_match or not score_match:
+            raise ValueError("Failed to find explanation or score in XML response")
+
+        explanation = explanation_match.group(1).strip()
         try:
-            score = int(score_match.group(1))
-            # Ensure score is between 0 and 100
-            score = max(0, min(100, score))
+            score = float(score_match.group(1).strip())
         except ValueError:
-            pass
+            raise ValueError(
+                f"Could not convert score to float: {score_match.group(1)}"
+            )
 
-    return {
-        "score": score,
-        "explanation": explanation,
-        "error": score is None,
-    }
+        # Convert the 0-10 scale to a 0-1 scale for consistency with previous format
+        relevance_score = score / 10.0
+
+        # Return only the explanation and relevance score
+        return {"relevance_score": relevance_score, "explanation": explanation}
+    except Exception as e:
+        # Fallback for failed parsing
+        return {
+            "relevance_score": 0.0,
+            "explanation": f"Failed to parse LLM response: {str(e)}\nOriginal response: {response[:200]}...",
+            "parse_error": str(e),
+        }
 
 
 def batch_analyze(
@@ -338,7 +406,7 @@ def batch_analyze(
     questions: List[str],
     config: Dict[str, Any],
     model: str = "gpt-4o-mini",
-) -> Dict[str, Dict[str, Dict[str, Any]]]:
+) -> Tuple[Dict[str, Dict[str, Dict[str, Any]]], Dict[str, float]]:
     """Analyze multiple papers against multiple questions.
 
     Args:
@@ -348,20 +416,59 @@ def batch_analyze(
         model: The LLM model to use
 
     Returns:
-        Dictionary mapping paper IDs to dictionaries of question relevance scores
+        Tuple of (results, token_usage)
+
+    Raises:
+        ValueError: If any paper is missing a required field
     """
     results: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    token_usage = {
+        "total_prompt_tokens": 0,
+        "total_completion_tokens": 0,
+        "total_tokens": 0,
+        "estimated_cost": 0.0,
+    }
+
+    # Get pricing information for the model
+    model_info = SUPPORTED_MODELS.get(model)
+    if not model_info:
+        raise ValueError(f"Model '{model}' not supported")
+
+    # Validate all papers have IDs before starting
+    for i, paper in enumerate(papers):
+        if "arxiv_id" not in paper:
+            raise ValueError(f"Paper at index {i} is missing required 'arxiv_id' field")
+        if "title" not in paper:
+            raise ValueError(
+                f"Paper {paper.get('arxiv_id', f'at index {i}')} is missing required 'title' field"
+            )
 
     for paper in papers:
-        paper_id = paper.get("id", "unknown")
+        paper_id = paper["arxiv_id"]
         results[paper_id] = {}
 
         for question in questions:
-            results[paper_id][question] = analyze_relevance(
-                paper, question, config, model
-            )
+            analysis_result = analyze_relevance(paper, question, config, model)
+            results[paper_id][question] = analysis_result
 
-    return results
+            # Update token usage statistics if available
+            metadata = analysis_result.get("metadata", {})
+            prompt_tokens = metadata.get("prompt_tokens", 0)
+            completion_tokens = metadata.get("completion_tokens", 0)
+            total_tokens = metadata.get("total_tokens", 0)
+
+            token_usage["total_prompt_tokens"] += prompt_tokens
+            token_usage["total_completion_tokens"] += completion_tokens
+            token_usage["total_tokens"] += total_tokens
+
+            # Calculate cost based on model pricing
+            input_cost = prompt_tokens * model_info["pricing"]["input"] / 1_000_000
+            output_cost = (
+                completion_tokens * model_info["pricing"]["output"] / 1_000_000
+            )
+            token_usage["estimated_cost"] += input_cost + output_cost
+
+    return results, token_usage
 
 
 if __name__ == "__main__":

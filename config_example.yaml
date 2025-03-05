@@ -26,7 +26,3 @@ settings:
   # Default output path for ranked papers (optional)
   # If not specified, results will only be printed to the console
   # default_output_path: "~/paper_rankings.csv"
-
-  # Default number of days to look back for emails (optional)
-  # If not specified, defaults to 30 days
-  # default_lookback_days: 30

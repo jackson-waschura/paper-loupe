@@ -8,14 +8,38 @@ This module handles:
 
 import random
 import time
-from typing import Any, Callable, List, TypeVar, cast
+from typing import Any, Callable, Iterator, List, Protocol, TypeVar
 
-import arxiv
+# Use type ignore for the missing stubs
+import arxiv  # type: ignore
 
 T = TypeVar("T")
 
 
-def search_arxiv_by_title(title: str, max_results: int = 5) -> List[Any]:
+# Define protocol types for ArXiv objects to help with type checking
+class ArxivAuthor(Protocol):
+    name: str
+
+
+class ArxivPaper(Protocol):
+    """Protocol for arxiv.Result objects."""
+
+    title: str
+    authors: List[ArxivAuthor]
+    summary: str
+    published: str
+    entry_id: str
+    pdf_url: str
+    categories: List[str]
+
+
+class ArxivClient(Protocol):
+    """Protocol for arxiv.Client objects."""
+
+    def results(self, search: Any) -> Iterator[ArxivPaper]: ...
+
+
+def search_arxiv_by_title(title: str, max_results: int = 5) -> List[ArxivPaper]:
     """Search arXiv for papers matching the given title.
 
     Args:
@@ -41,7 +65,7 @@ def search_arxiv_by_title(title: str, max_results: int = 5) -> List[Any]:
 
 def search_with_fallback(
     title: str, authors: List[str], max_results: int = 5
-) -> List[Any]:
+) -> List[ArxivPaper]:
     """Search arXiv with fallback strategies if exact match fails.
 
     Implements the following fallback strategy:
@@ -98,7 +122,9 @@ def search_with_fallback(
     return []
 
 
-def throttled_request(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+def throttled_request(
+    func: Callable[..., Iterator[T]], *args: Any, **kwargs: Any
+) -> Iterator[T]:
     """Execute a function with rate limiting.
 
     Ensures requests are spaced by at least 1 second with some jitter
@@ -123,7 +149,7 @@ def throttled_request(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
     time.sleep(delay)
 
     # Execute the function and return its results
-    return cast(T, func(*args, **kwargs))
+    return func(*args, **kwargs)
 
 
 if __name__ == "__main__":
