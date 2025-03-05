@@ -8,6 +8,16 @@ questions:
   - "What are recent developments in efficient training for large language models?"
   - "How are transformers being used for multiview diffusion and generative 3D tasks?"
 
+# API keys for LLM providers
+# You can set these as environment variables instead:
+# PAPER_LOUPE_OPENAI_API_KEY, PAPER_LOUPE_ANTHROPIC_API_KEY
+api_keys:
+  # OpenAI API key (required for OpenAI models)
+  openai: ""  # Replace with your actual API key
+
+  # Anthropic API key (required for Claude models)
+  anthropic: ""  # Replace with your actual API key if using Claude models
+
 # Optional settings
 settings:
   # Default model to use for relevance scoring (optional)

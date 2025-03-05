@@ -1,5 +1,6 @@
 """Configuration handling for Paper Loupe."""
 
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Union, cast
 
@@ -7,6 +8,10 @@ import yaml
 from rich.console import Console
 
 console = Console()
+
+# Environment variable names for API keys
+ENV_OPENAI_API_KEY = "PAPER_LOUPE_OPENAI_API_KEY"
+ENV_ANTHROPIC_API_KEY = "PAPER_LOUPE_ANTHROPIC_API_KEY"
 
 
 def load_config(config_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
@@ -57,3 +62,29 @@ def create_default_config_dir() -> Path:
     config_dir = Path.home() / ".config" / "paper-loupe"
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir
+
+
+def get_api_key(config: Dict[str, Any], provider: str) -> Optional[str]:
+    """Get API key for a provider from config or environment variables.
+
+    Args:
+        config: The loaded configuration dictionary
+        provider: The provider name ('openai' or 'anthropic')
+
+    Returns:
+        The API key if found, None otherwise
+    """
+    # Try to get from environment variables first
+    env_var_name = {
+        "openai": ENV_OPENAI_API_KEY,
+        "anthropic": ENV_ANTHROPIC_API_KEY,
+    }.get(provider)
+
+    if env_var_name and os.environ.get(env_var_name):
+        return cast(Optional[str], os.environ.get(env_var_name))
+
+    # Try to get from config file
+    if "api_keys" in config and provider in config["api_keys"]:
+        return cast(Optional[str], config["api_keys"][provider])
+
+    return None

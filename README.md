@@ -146,8 +146,8 @@ Pre-commit will automatically run these checks:
 The following items need to be completed for full functionality:
 
 ### LLM Integration
-- [ ] Set up secure API key management for OpenAI/Anthropic
-- [ ] Complete paper relevance scoring using LLM APIs
+- [x] Set up secure API key management for OpenAI/Anthropic
+- [x] Complete paper relevance scoring using LLM APIs
 - [ ] Decide on prompt templates for paper evaluation
 
 ### Pulling Threads Together
