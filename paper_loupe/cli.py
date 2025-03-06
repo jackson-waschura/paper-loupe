@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import click
+from google.auth.exceptions import RefreshError  # type: ignore
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import (
@@ -134,10 +135,29 @@ def process(
         )
 
         console.print("1. Authenticating with Gmail API...")
-        gmail_service = authenticate_gmail()
-        if not gmail_service:
+        try:
+            gmail_service = authenticate_gmail()
+            if not gmail_service:
+                console.print(
+                    "[bold red]Error:[/bold red] Failed to authenticate with Gmail API. "
+                    "Please check your credentials and try again."
+                )
+                return
+        except FileNotFoundError as e:
+            console.print(f"[bold red]Credentials Error:[/bold red] {str(e)}")
+            return
+        except RefreshError as e:
             console.print(
-                "[bold red]Error:[/bold red] Failed to authenticate with Gmail API."
+                f"[bold red]Token Error:[/bold red] {str(e)}\n"
+                "Your authentication token has expired or been revoked. "
+                "The system will attempt to re-authenticate when you run the command again."
+            )
+            return
+        except Exception as e:
+            console.print(
+                f"[bold red]Authentication Error:[/bold red] {str(e)}\n"
+                "If you're experiencing authentication issues, try running the command again. "
+                "If the problem persists, you may need to delete your token file and re-authenticate."
             )
             return
 

@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from bs4 import BeautifulSoup, Tag
+from google.auth.exceptions import RefreshError  # type: ignore
 
 # These imports lack type stubs, so we need to ignore mypy warnings
 from google.auth.transport.requests import Request  # type: ignore
@@ -43,9 +44,21 @@ def authenticate_gmail(
 
     Returns:
         Authenticated Gmail API service or None if authentication fails
+
+    Raises:
+        FileNotFoundError: If credentials file is missing
+        RefreshError: If token refresh fails
     """
     credentials_path = credentials_path or CREDENTIALS_PATH
     token_path = token_path or TOKEN_PATH
+
+    # Check if credentials file exists
+    if not os.path.exists(credentials_path):
+        raise FileNotFoundError(
+            f"Credentials file not found at {credentials_path}. "
+            "Please obtain OAuth 2.0 credentials from the Google Cloud Console "
+            "and place them in the correct location."
+        )
 
     creds = None
     # The token.json file stores the user's access and refresh tokens and is
@@ -58,14 +71,37 @@ def authenticate_gmail(
     # If there are no (valid) credentials available, let the user log in
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                # Handle the case where token refresh fails (e.g., token revoked)
+                print(
+                    "Token has expired or been revoked. Starting fresh authentication..."
+                )
+                if os.path.exists(token_path):
+                    os.remove(token_path)
+
+                # Start fresh authentication flow
+                try:
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        credentials_path, SCOPES
+                    )
+                    creds = flow.run_local_server(port=0)
+                    # Save the new credentials
+                    save_token(creds, token_path)
+                except Exception as auth_error:
+                    # Re-raise with more helpful message
+                    raise RefreshError(
+                        f"Failed to refresh token and re-authentication also failed: {auth_error}",
+                        None,
+                    ) from auth_error
         else:
             flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
             creds = flow.run_local_server(port=0)
 
-        # Save the credentials for the next run
-        with open(token_path, "w") as token:
-            token.write(creds.to_json())
+        # Save the credentials for the next run (if not already saved above)
+        if not (creds and creds.expired and creds.refresh_token):
+            save_token(creds, token_path)
 
     try:
         # Build the Gmail API service
@@ -330,6 +366,23 @@ def get_recent_papers(days: int = 30) -> List[Dict[str, Any]]:
 
     # Clean and return the paper data
     return clean_paper_data(papers)
+
+
+def save_token(creds: Credentials, token_path: str) -> None:
+    """Save credentials to token file, creating directory if needed.
+
+    Args:
+        creds: The credentials to save
+        token_path: Path where to save the token
+    """
+    # Ensure the directory exists
+    token_dir = os.path.dirname(token_path)
+    if token_dir and not os.path.exists(token_dir):
+        os.makedirs(token_dir, exist_ok=True)
+
+    # Save the token
+    with open(token_path, "w") as token:
+        token.write(creds.to_json())
 
 
 # Example usage
